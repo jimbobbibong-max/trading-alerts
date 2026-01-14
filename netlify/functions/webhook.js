@@ -154,8 +154,9 @@ exports.handler = async (event) => {
 
 async function fetchChartImage(ticker) {
   try {
-    const chartUrl = `https://api.chart-img.com/v1/tradingview/advanced-chart?symbol=${ticker}&interval=120&width=800&height=450`;
-    const response = await fetch(chartUrl);
+    // Finviz daily chart with moving averages (20, 50, 200)
+    const chartUrl = `https://finviz.com/chart.ashx?t=${ticker}&ty=c&ta=1&p=d`;
+    const response = await fetch(chartUrl, { redirect: 'follow' });
     if (!response.ok) {
       console.error('Chart API error:', response.status);
       return null;
