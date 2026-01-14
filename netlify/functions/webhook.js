@@ -39,7 +39,7 @@ exports.handler = async (event) => {
       database_id: NOTION_DB,
       filter: {
         property: 'Ticker',
-        rich_text: {
+        title: {
           equals: ticker.toUpperCase(),
         },
       },
@@ -65,7 +65,7 @@ exports.handler = async (event) => {
   // Extract field values
   const entryConditions = getRichText(properties['Entry Conditions']);
   const invalidationLevel = getRichText(properties['Invalidation Level']);
-  const industryETF = getSelect(properties['Industry ETF']);
+  const industryETF = getRichText(properties['Industry ETF']);
   const demandZone = getRichText(properties['Demand Zone']);
   const tier = getSelect(properties['Tier']);
 
