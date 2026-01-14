@@ -1,0 +1,12 @@
+{
+  "name": "trading-alerts",
+  "version": "1.0.0",
+  "description": "TradingView webhook that queries Notion and posts to Discord",
+  "private": true,
+  "dependencies": {
+    "@notionhq/client": "^2.2.15"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
