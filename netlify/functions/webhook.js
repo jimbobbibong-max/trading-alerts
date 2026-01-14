@@ -5,12 +5,14 @@ const NOTION_DB = process.env.NOTION_WATCHLIST_DB;
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_URL;
 
 const LEVEL_CONFIG = {
-  execution: { emoji: '🔵', color: 0x3498db },
-  demand: { emoji: '🟡', color: 0xf1c40f },
-  pivot: { emoji: '⚪', color: 0x95a5a6 },
-  strength: { emoji: '🟢', color: 0x2ecc71 },
-  invalidation: { emoji: '🔴', color: 0xe74c3c },
+  execution: { emoji: '🔵', color: 3447003 },     // #3498db
+  demand: { emoji: '🟡', color: 15844047 },       // #f1c40f
+  pivot: { emoji: '⚪', color: 9807270 },         // #95a5a6
+  strength: { emoji: '🟢', color: 3066993 },      // #2ecc71
+  invalidation: { emoji: '🔴', color: 15158332 }, // #e74c3c
 };
+
+const RADAR_COLOR = 15158332; // #e74c3c (red)
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -83,7 +85,7 @@ exports.handler = async (event) => {
 
   // Determine colour (Radar tier overrides to red)
   const levelConfig = LEVEL_CONFIG[level] || LEVEL_CONFIG.execution;
-  const embedColor = tier === 'Radar' ? 0xe74c3c : levelConfig.color;
+  const embedColor = tier === 'Radar' ? RADAR_COLOR : levelConfig.color;
   const emoji = levelConfig.emoji;
 
   // Build Discord embed
@@ -244,10 +246,14 @@ function buildEmbed({
   // Chart link
   description += `📈 [View Chart](https://www.tradingview.com/chart/?symbol=${ticker})`;
 
+  // Build chart image URL (2hr timeframe)
+  const chartUrl = `https://api.chart-img.com/v1/tradingview/advanced-chart?symbol=${ticker}&interval=120&width=800&height=450`;
+
   return {
     title: `${emoji} ${ticker} hit $${price} [${level}]`,
     description,
     color,
+    image: { url: chartUrl },
     timestamp: new Date().toISOString(),
   };
 }
