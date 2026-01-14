@@ -156,12 +156,19 @@ async function fetchChartImage(ticker) {
   try {
     // Finviz daily chart with moving averages (20, 50, 200)
     const chartUrl = `https://finviz.com/chart.ashx?t=${ticker}&ty=c&ta=1&p=d`;
-    const response = await fetch(chartUrl, { redirect: 'follow' });
+    const response = await fetch(chartUrl, {
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
     if (!response.ok) {
       console.error('Chart API error:', response.status);
       return null;
     }
-    return await response.arrayBuffer();
+    const buffer = await response.arrayBuffer();
+    console.log('Chart fetched, size:', buffer.byteLength);
+    return buffer;
   } catch (err) {
     console.error('Failed to fetch chart:', err);
     return null;
