@@ -88,6 +88,9 @@ exports.handler = async (event) => {
   const embedColor = tier === 'Radar' ? RADAR_COLOR : levelConfig.color;
   const emoji = levelConfig.emoji;
 
+  // Fetch chart image
+  const chartBuffer = await fetchChartImage(ticker.toUpperCase());
+
   // Build Discord embed
   const embed = buildEmbed({
     ticker: ticker.toUpperCase(),
@@ -104,17 +107,35 @@ exports.handler = async (event) => {
     invalidationLevel,
     entryConditions,
     industryETF,
+    hasChart: !!chartBuffer,
   });
 
   // Post to Discord
   try {
-    const discordResponse = await fetch(DISCORD_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed] }),
-    });
+    let discordResponse;
+
+    if (chartBuffer) {
+      // Send with image attachment using multipart/form-data
+      const formData = new FormData();
+      formData.append('payload_json', JSON.stringify({ embeds: [embed] }));
+      formData.append('files[0]', new Blob([chartBuffer], { type: 'image/png' }), 'chart.png');
+
+      discordResponse = await fetch(DISCORD_WEBHOOK, {
+        method: 'POST',
+        body: formData,
+      });
+    } else {
+      // Send without image
+      discordResponse = await fetch(DISCORD_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ embeds: [embed] }),
+      });
+    }
 
     if (!discordResponse.ok) {
+      const errorText = await discordResponse.text();
+      console.error('Discord error response:', errorText);
       throw new Error(`Discord responded with ${discordResponse.status}`);
     }
   } catch (err) {
@@ -130,6 +151,21 @@ exports.handler = async (event) => {
     body: JSON.stringify({ success: true, ticker: ticker.toUpperCase() }),
   };
 };
+
+async function fetchChartImage(ticker) {
+  try {
+    const chartUrl = `https://api.chart-img.com/v1/tradingview/advanced-chart?symbol=${ticker}&interval=120&width=800&height=450`;
+    const response = await fetch(chartUrl);
+    if (!response.ok) {
+      console.error('Chart API error:', response.status);
+      return null;
+    }
+    return await response.arrayBuffer();
+  } catch (err) {
+    console.error('Failed to fetch chart:', err);
+    return null;
+  }
+}
 
 function getRichText(property) {
   if (!property || property.type !== 'rich_text') return '';
@@ -212,6 +248,7 @@ function buildEmbed({
   invalidationLevel,
   entryConditions,
   industryETF,
+  hasChart,
 }) {
   let description = '';
 
@@ -246,14 +283,17 @@ function buildEmbed({
   // Chart link
   description += `📈 [View Chart](https://www.tradingview.com/chart/?symbol=${ticker})`;
 
-  // Build chart image URL (2hr timeframe)
-  const chartUrl = `https://api.chart-img.com/v1/tradingview/advanced-chart?symbol=${ticker}&interval=120&width=800&height=450`;
-
-  return {
+  const embed = {
     title: `${emoji} ${ticker} hit $${price} [${level}]`,
     description,
     color,
-    image: { url: chartUrl },
     timestamp: new Date().toISOString(),
   };
+
+  // Add image reference if chart was fetched
+  if (hasChart) {
+    embed.image = { url: 'attachment://chart.png' };
+  }
+
+  return embed;
 }
